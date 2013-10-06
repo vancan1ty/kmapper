@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <meta name="robots" content="all, index, follow" />
+    <meta http-equiv="X-UA-Compatible" content="IE=7; IE=8" /> 
+    <link rel="shortcut icon" href="images/favicon.ico" />
+    <link rel="stylesheet" href="styles.css" type="text/css" media="screen" />
+    <script src="scripts/jquery-1.10.2.js"></script>
+    <meta name="description" content="jstruss"/>
+    <title>k-map generator</title>
+  </head>
+  <body>
+    <div id="wrapper">
+      <div id="header">  <a href="http://www.cvberry.com" class="leftLink"> back to site </a> <span class="rightBig"> k-map generator </span> </div>
+      <div id="innerwrapper">
+	<div id="colconstraint">
+	  <div id="content">
+	    <p id="description"> Paste a truth table into the text entry area, click calculate to see its associated kmaps.</p>
+
+	    <div id="iwrapper" >
+	      <form method="post" >
+		<textarea id="truthtableinput" name="truthtableinput"> </textarea> 
+		<br>
+		num inputs? <input name="numinputs" min="0" max="10"> </input>
+		<input type="submit" id="buttonCalc" > Calculate </input>
+	      </form>
+	    </div>
+	    <div style="clear: both"> </div>
+	    
+	    <div id="kmapoutput"> 
+
+	      <!-- TMPL_VAR content -->
+
+	    </div>
+
+	  </div>
+	  <div style="clear: both"> </div>
+	</div>
+      </div>
+      <div id="footer"> 
+	<p>&copy Currell Berry 2013</a> </p>
+</div>
+<div style="clear: both"> </div>
+</div> 
+
+<script src="canvasops.js"> </script>
+</body>
+</html>

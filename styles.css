@@ -1,0 +1,148 @@
+/* ***************** first is global formatting ******************* */
+*{
+	padding: 0px;
+	margin: 0px;
+}
+
+
+body {
+	background: #4C4C4C;
+	height: 100%;
+	width: 90%;
+	padding: 5%;
+}
+
+/* ***************** next is formatting for divs ******************
+ * organized from outside to inside from top to bottom */
+
+#wrapper {
+	min-width: 450px;
+	text-align: center;
+	color: white;
+
+}
+#innerwrapper {
+	min-width: 450px;
+	background: white;
+	padding: 0px 0px 0px 30px;
+	overflow: auto;
+/*	box-shadow: 0px 2px 4px #FFFFAF; */
+}
+
+#iwrapper {
+    margin: 0.1em;
+    text-align: left;
+    width: 55%;
+    height: 250px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+#iwrapper button { 
+    float: right;
+}
+
+#iwrapper textarea {
+    width: 100%;
+    height: 200px;
+}
+
+
+#header {
+	height: 3.1em;
+	border-bottom: 2px solid #F07746;
+}
+
+#header .rightBig {
+	float: right;
+	font-size: 1.7em;
+	line-height: 1.7em;
+}
+
+#header .leftLink {
+    font-size:1.0em;
+    float: left;
+    line-height: 1.7em;
+    padding-top: 1.1em;
+    color: #0ACF22;
+}
+
+
+/* this div holds the navigation and content, and, in combination with the 
+ * bottom padding and margin rules of the navigation div forces the height 
+ * of the navigation column to mirror that of content */
+#colconstraint {
+overflow: hidden;
+}
+
+#content {
+	overflow: hidden;
+	padding: 1.2em 1.2em 1.2em 0px;
+	/*background: #DDD;
+	padding: 10px; 
+	 */ 
+	color: black;
+}
+
+#content h1 {
+	padding: 10px 0px;
+	font-size: 1.2em;
+	/*font-family: sans;*/
+}
+
+
+#footer {
+	display: block;
+	margin: 0em 0px 1em 0px;
+	border-top: 1px solid #F07746;
+	clear: both;
+	float: left;
+	width: 100%;
+	text-align: right;
+}
+#footer p {
+	margin-right: 0.8em;
+	margin-top: 1em;
+}
+
+/* ****************** next is class formatting  ****************** */
+.rightside {
+	margin-left: 1.2em;
+	width: 10em;
+	float: right;
+	text-align: center;
+	overflow: none;
+}
+
+.rightside img {
+	width: 100%;
+}
+
+/* ******************* next is tag formatting ********************* */
+p, a {
+	font-size: 1em;
+}
+
+p {
+	font-family: georgia, serif;
+}
+
+ul.pad  {
+	margin-left: 1em;
+}
+
+table {
+	border: 1px solid black;
+	float: left;
+	margin: 1em;
+}
+
+/* td { */
+/* 	border: 1px solid black; */
+/* 	padding: 10px; */
+/* } */
+
+td img{
+	max-width: 600px;
+	text-align: center;
+}
