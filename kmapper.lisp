@@ -1,16 +1,355 @@
 ;;;; kmapper.lisp
 ;;;; author: Currell Berry
 ;;;; This program creates karnaugh maps from truth table inputs.
+;;;; 
+;;;; This program includes a web interface.  In a common lisp environment with quicklisp
+;;;; installed, running the program should be as simple as calling (load "kmapper.lisp") from
+;;;; the REPL, and navigating to localhost:8080 in a web browser. Quicklisp will handle installing
+;;;; the dependencies "
 ;;;;
-;;;; the truth table must be entered in whitespace separated form -- this is 
-;;;; automatically done if you paste from a spreadsheet for example.
+;;;; To use the REPL plain text interface:
+;;;; 1. switch to the package :kmapweb
+;;;;     (in-package :kmapweb) 
+;;;; 2. save the truth table you wish to generate k maps from as a variable (refer to the 
+;;;; example truth tables at the bottom of the file for how to format this.)
+;;;; Let's say you named the variable *my-truth-table*
+;;;; 3. call (create-k-maps *my-truth-table*)
+;;;; 4. answer the prompt for number of inputs
+;;;; 
+;;;; for both interfaces, the truth table must be entered in whitespace separated form 
+;;;; -- this is automatically done if you paste from a spreadsheet for example.
 ;;;;
 ;;;; note, "tlist" as referred to within the code below means a key value lisp p-list with the
 ;;;; column header as key and a list of the binary values associated with that
 ;;;; column header as values.
+;;;;
+;;;; You may use or modify this program for any purpose, but please 
+;;;; include my name in the source.
+
+;;; ********************START WEB SPECIFIC CODE******************************
+;;(ql:quickload "html-template")   ;used for commented out no-longer used snippet 
+					;later down in the file
+(ql:quickload "cl-who")
+(ql:quickload "hunchentoot")
+
+(defpackage :kmapweb
+  (:use :common-lisp :hunchentoot :cl-who))
+
+(in-package :kmapweb)
+
+(setf *dispatch-table*
+      (list #'dispatch-easy-handlers))
+(setf *show-lisp-errors-p* t
+      *show-lisp-backtraces-p* t)
+
+;;(load "kmapper.lisp")
+;;(setf hunchentoot:*catch-errors-p* nil) 
+
+(define-easy-handler (easy-demop :uri "/ttablepost" :default-request-type :both)
+    ((truthtableinput :request-type :post 
+		      :init-form *truth-table*) 
+     (numinputs :request-type :post))
+  ;;set numinputs and truthtableinput to correct values for post and get scenarios
+  (let* ((numinputs (if numinputs (parse-integer numinputs) 4)) 
+	 (truthtableinput (if truthtableinput (escape-string truthtableinput) *truth-table*))
+	 (output (getKMapsOnly truthtableinput numinputs)))
+    (log-message* :INFO "doing post! output: ~a " output)
+    output))
+
+
+(defvar *macceptor* (make-instance 'hunchentoot:easy-acceptor :port 8080 
+                                   :document-root #p"/home/vancan1ty/Desktop/lisp/kmapweb/"))
+(hunchentoot:start *macceptor*)
+
+(defun getKMapsOnly (truthtable numinputs)
+  (let* ((kmapoutput (handler-case (html-create-k-maps truthtable numinputs)
+		       (malformed-truth-table-error (se) (concatenate 'string "<br> ERROR: " (text se)))))
+	 (generated-html (if (eql (length kmapoutput) 0) "Invalid truth table input!" kmapoutput)))
+    generated-html))
+
+;; old code I had which demonstrated filling template
+;; (defun getKMaps (truthtable numinputs)
+;;   (let* ((kmapoutput (html-create-k-maps truthtable numinputs))
+;; 	 (generated-html (list :content (if (eql (length kmapoutput) 0) "Invalid truth table input!" kmapoutput)))
+;; 	 (dbgout (list :content truthtable))
+;; 	 (html-template:*string-modifier* #'identity))
+;;     (html-template:fill-and-print-template #p"./index.tmpl" generated-html :stream *standard-output*)))
+
+(defun html-create-k-maps (truth-table numinputs)
+  (html-prog-runner (split-list->tlist (raw-ttable->split-list truth-table))
+		    numinputs))
+
+(defun html-prog-runner (tlist numinputs) 
+  "brings together logic of program.  This method produces html output..." 
+
+  ;;first validate input
+  (let ((validate-return (validate-tlist tlist numinputs)))
+    (if (not (eql t validate-return)) 
+	(error 'malformed-truth-table-error :text validate-return)))  
+  
+  ;;then proceed if we passed the previous step
+  (with-html-output-to-string (*standard-output* nil)
+    (let* ((keys (getkeys tlist))
+	   (numoutputs (- (length keys) numinputs))
+	   (inputkeys (filter-by-index keys (range :min 0 :max numinputs)))
+	   (outputs (filter-by-index keys (range :min numinputs :max (length keys))))
+	   (leftinputs (filter-by-index inputkeys (range :min 0 :max (floor (/ numinputs 2)))))
+	   (topinputs (filter-by-index inputkeys (range :min (length leftinputs) :max numinputs)))
+	   (lcodes (create-gray-code (length leftinputs)))
+	   (tcodes (create-gray-code (length topinputs))))
+      (loop for outputwanted from 0 below numoutputs do
+	   (fmt "~%")
+	   (htm (:table :border 0 :cellpadding 4 :display "inline" 
+			(htm (
+			      :caption (fmt "~A k-map" (nth outputwanted outputs))))
+			(let* ((oiqlist (nth outputwanted (get-outputvals tlist numinputs))))
+			  (fmt "~%")
+			  (htm (:tr (htm (:td (format t "~a " inputkeys)))
+				    (loop for tcode in tcodes do
+					 (htm (:td (fmt "~a" tcode)))))) 
+			  (loop for lcode in lcodes do
+			       (fmt "~%")
+			       (htm (:tr 
+				     (htm (:td (fmt "~a" lcode))
+					  (loop for tcode in tcodes do 
+					       (htm (:td (fmt "~a" (nth 
+								    (car 
+								     (select-row-by-kv 
+								      tlist 
+								      (zip-plist inputkeys (append lcode tcode))))
+								    oiqlist))))))))))))))
+    (htm (:div :style "clear: both"))))
+
+;;; *****************************END WEB SPECIFIC CODE*****************************
+
+
+;;; ********* Text Mode Only Code **************
+
+;;; run this function to run a text version of the program from the REPL.
+(defun create-k-maps (truth-table)
+  (prog-runner (split-list->tlist (raw-ttable->split-list truth-table))))
+
+(defun prog-runner (tlist) 
+  "brings together logic of program." 
+  (let* ((keys (getkeys tlist))
+	 (numinputs (parse-integer (prompt-read "Number of Inputs?")))
+	 (numoutputs (- (length keys) numinputs))
+	 (inputkeys (filter-by-index keys (range :min 0 :max numinputs)))
+	 (outputs (filter-by-index keys (range :min numinputs :max (length keys))))
+	 (leftinputs (filter-by-index inputkeys (range :min 0 :max (floor (/ numinputs 2)))))
+	 (topinputs (filter-by-index inputkeys (range :min (length leftinputs) :max numinputs)))
+	 (lcodes (create-gray-code (length leftinputs)))
+	 (tcodes (create-gray-code (length topinputs))))
+    (loop for outputwanted from 0 below numoutputs do
+	 (format t "~a k-map~%" (nth outputwanted outputs))
+	 (let* ((oiqlist (nth outputwanted (get-outputvals tlist numinputs))))
+	   (format t "~10a " inputkeys)
+	   (loop for tcode in tcodes do
+		(format t "~10a" tcode))
+	   (format t "~%")
+	   (loop for lcode in lcodes do
+		(format t "~10a ~{~10a~}~%" 
+			lcode 
+			(loop for tcode in tcodes collecting
+			     (nth 
+			      (car 
+			       (select-row-by-kv 
+				tlist 
+				(zip-plist inputkeys (append lcode tcode))))
+			      oiqlist)))))
+
+	 (format t "~%"))))
+
+(defun print-t-list (tlist)
+  (format t "~{~5a~}~%" (getkeys tlist))
+  
+  (format t "~{~{~5a~}~%~}"  (rowsview (getvals tlist))))
+
+;;; ********* End Text Mode Only Code **************
+
+(define-condition malformed-truth-table-error (error)
+  ((text :initarg :text :reader text)))
+
+(defun raw-ttable->split-list (truth-table) 
+  "this function takes in the raw string representation and splits it into a 
+'split' plist with keys :COLHEADERS and :REST "
+  (let* ((ilist (%create-io-list truth-table))
+	 (split-list 
+	  (do ((olist nil)
+	       (cur 0 (1+ cur)))
+	      ((not (typep (car ilist) 'keyword)) (list :colheaders (reverse olist) :rest ilist))
+	    (push (pop ilist) olist))))
+    split-list))
+
+(defun split-list->tlist (split-list)
+  "This function takes the already partway parsed split-list
+and converts it into a 'tlist' (whose format is described in the program
+header"
+  (let* ((temp-t-list (mapcan #'(lambda (key) (list key nil)) (getf split-list :colheaders)))
+	 (numtoset (/ (length temp-t-list) 2))
+	 (rlist (getf split-list :rest)))
+    (dotimes (i numtoset)
+      (setf (nth (+ 1 (* 2 i)) temp-t-list) (take-by-index-w-mod rlist i numtoset) ))
+    temp-t-list))
+
+(defun take-by-index-w-mod (ilist remainder modulus)
+  (do ((index remainder (+ index modulus)) (olist nil))
+      ((>= index (length ilist)) (reverse olist))
+    (push (nth index ilist) olist)))
+
+(defun getkeys (tlist)
+  "returns the keys of a given tlist"
+  (loop for n from 0 below (length tlist) by 2
+     collect (nth n tlist)))
+
+(defun getvals (tlist)
+  "returns the vals (lists) of a given tlist"
+  (loop for n from 1 below (length tlist) by 2
+     collect (nth n tlist)))
+
+(defun index-vals-by-row (tlistvals row-num)
+  "use getvals on the basic tlist to get this going..."
+  (let ((vals tlistvals))
+    (loop for n from 0 below (length vals) by 1
+       collect (nth row-num (nth n vals)))))
+
+(defun validate-input-list (input-list numinputs)
+  "returns true if the input list has 2^numinputs entries and half of
+   them are 0s and the other half are ones.  otherwise returns nil"
+  (let ((needed-num-entries (expt 2 numinputs)))
+    (if (and (eql needed-num-entries (length input-list))
+	     (eql (/ needed-num-entries 2) (count 1 input-list))
+	     (eql (/ needed-num-entries 2) (count 0 input-list)))
+	t
+	nil)))
+
+(defun validate-tlist (tlist numinputs)
+  (if (eql nil (loop for i from 0 below (length tlist) do
+		    (let ((entry (nth i tlist)))
+		      (cond ((eql (mod i 2) 0)  ;;then validate symbol
+			     (if (not (typep entry 'symbol)) 
+				 (return-from validate-tlist (concatenate 'string "invalid column header: " (format nil "~a" entry)))))
+			    ((<= i (* 2 numinputs))
+			     (if (not (validate-input-list entry numinputs))
+				 (return-from validate-tlist (concatenate 'string 
+									  "invalid input column: " 
+									  (format nil "~a" (nth (- i 1) tlist)) 
+									  " " (format nil "~a" entry) 
+									  ".  Did you specify the correct number of inputs?"))))
+			    (t  ;;this is a regular output list
+			     (if (not (eql (length entry) (expt 2 numinputs)))
+				 (return-from validate-tlist (concatenate 'string 
+									  "invalid length output column" 
+									  (format nil "~a" (nth (- i 1) tlist)) 
+									  " " 
+									  (format nil "~a" entry)))))))))
+      t))
+
+(defun select-row-by-kv (tlist kvpairs)
+  "lets you select all matching items within a tlist given a 
+set of key-value pairs to matching"
+  (let* ((tlistvals (getvals tlist))
+	 (tlistkeys (getkeys tlist))
+	 (rowvals (rowsview tlistvals))
+	 (filteredrows (range :min 0 :max (length rowvals)))
+	 (keys (getf (dissoc-plist kvpairs) :keys))
+	 (vals (getf (dissoc-plist kvpairs) :vals)))
+    (mapcar #'(lambda (key val) 
+		(let* (
+		       (index (position key tlistkeys)))
+		  (loop for n from 0 below (length rowvals) by 1
+		     do
+		       (if (not (eql (nth index (nth n rowvals)) val))
+			   (setf filteredrows (remove n filteredrows))
+			   nil) ))) 
+	    keys
+	    vals)
+    filteredrows))
+
+(defun rowsview (tlistvals) 
+  (loop for n from 0 below (length (car tlistvals)) by 1
+     collect (index-vals-by-row tlistvals n)))
+
+(defun dissoc-plist (ilist)
+  "splits a plist into its keys and vals parts"
+  (do ((keyslist nil) (valslist nil) (i 0 (1+ i)))
+      ((not (car ilist)) (list :keys keyslist :vals valslist))
+    (push (pop ilist) keyslist)
+    (push (pop ilist) valslist)))
+
+(defun filter-by-index (list indexes)
+  (loop for item in indexes collecting
+       (nth item list)))
+
+(defun create-gray-code (numbits) 
+  "wrapper for %create-gray-code"
+  (%create-gray-code '((0) (1)) 1 numbits))
+
+(defun %create-gray-code (prev-code currentlevel finallevel) 
+  "given 1. a gray code as a list of lists, 2. the current number of bits in this gray code,
+  and 3. the number of bits we want in our final gray code, this function recursively generates
+  this 'finallevel' bit gray code.  uses logic found in in the wikipedia article on gray codes."
+  (if (eql currentlevel finallevel)
+      prev-code ;;base case!  we're done
+      (let* ((from-old (mapcar #'(lambda (x) (cons 0 x)) prev-code)) ;;prefix old entries with 0
+	     (from-new (mapcar #'(lambda (x) (cons 1 x)) (reverse prev-code))) ;;reflect old entries, prefix these new entries with 1
+	     (new-code (nconc from-old from-new)))
+	(%create-gray-code new-code (+ currentlevel 1) finallevel)))) ;recurse!
+
+(defun get-outputvals (tlist numinputs)
+  (let ((vals (getvals tlist)))
+    (filter-by-index vals (range :min numinputs :max (length vals)))))
+
+(defun make-keyword (name) (values (intern (string-upcase name) "KEYWORD")))
+
+(defun %create-io-list (s-truth-table)
+  (with-input-from-string 
+      (s s-truth-table)
+    (loop for x = (read s nil :end) until (eq x :end) 
+       collect (if 
+		(typep x 'symbol) 
+		(make-keyword x)
+		x)) ))
+
+;;; utility code
+(defmacro break-transparent (exp)
+  `(let ((x ,exp)) (break "argument to break: ~:S" x) x))
+
+(defun range (&key (min 0) (max 0) (step 1))
+  (loop for n from min below max by step
+     collect n))
+
+(defun prompt-read (prompt)
+  (format *query-io* "~a: " prompt)
+  (read-line *query-io*))
+
+(defun zip-plist (keys values)
+  "creates a plist from a list of keys and a list of values."
+  (loop for k in keys
+     for v in values nconc
+       (list k v)))
+
+
+;; (defun %tester1 () 
+;;   (let* ((outputwanted 0)
+;; 	(oiqlist (nth outputwanted (get-outputvals *itlist* 4)))
+;; 	(lcodes (create-gray-code 2))
+;; 	(tcodes (create-gray-code 2)))
+;;     (loop for lcode in lcodes collecting
+;; 	 (loop for tcode in tcodes collecting
+;; 	      (cons 
+;; 	       (append lcode tcode) 
+;; 	       (nth 
+;; 		(car 
+;; 		 (select-row-by-kv 
+;; 		  *itlist* 
+;; 		  (zip-plist '(:G :A :B :C) (append lcode tcode))))
+;; 		oiqlist))))))
+
 
 ;;;some example truth tables
 
+;;; example truth tables
 (defvar *truth-table* "
 G	A	B	C	S0	S1	S2	W	X	Y	Z
 0	0	0	0	0	0	0	0	1	0	0
@@ -61,240 +400,3 @@ G	A	B	C	S0	S1	S2	W	X	Y	Z
         1  1  1  0  0
         1  1  1  1  0
 ")
-
-
-;;; run this function to run the program
-(defun create-k-maps (truth-table)
-  (prog-runner (split-list->tlist (raw-ttable->split-list truth-table))))
-
-(defun html-create-k-maps (truth-table numinputs)
-  (html-prog-runner (split-list->tlist (raw-ttable->split-list truth-table))
-		    numinputs))
-
-(defun raw-ttable->split-list (truth-table) 
-  "this function takes in the raw string representation and splits it into a 
-'split' plist with keys :COLHEADERS and :REST "
-  (let* ((ilist (%create-io-list truth-table))
-	 (split-list 
-	  (do ((olist nil)
-	       (cur 0 (1+ cur)))
-	      ((not (typep (car ilist) 'keyword)) (list :colheaders (reverse olist) :rest ilist))
-	    (push (pop ilist) olist))))
-  split-list))
-
-(defun split-list->tlist (split-list)
-  "This function takes the already partway parsed split-list
-and converts it into a 'tlist' (whose format is described in the program
-header"
-    (let* ((temp-t-list (mapcan #'(lambda (key) (list key nil)) (getf split-list :colheaders)))
-	   (numtoset (/ (length temp-t-list) 2))
-	   (rlist (getf split-list :rest)))
-      (dotimes (i numtoset)
-	(setf (nth (+ 1 (* 2 i)) temp-t-list) (take-by-index-w-mod rlist i numtoset) ))
-      temp-t-list))
-
-(defun take-by-index-w-mod (ilist remainder modulus)
-  (do ((index remainder (+ index modulus)) (olist nil))
-  ((>= index (length ilist)) (reverse olist))
-    (push (nth index ilist) olist)))
-
-(defun getkeys (tlist)
-  "returns the keys of a given tlist"
-  (loop for n from 0 below (length tlist) by 2
-       collect (nth n tlist)))
-
-(defun getvals (tlist)
-  "returns the vals (lists) of a given tlist"
-  (loop for n from 1 below (length tlist) by 2
-       collect (nth n tlist)))
-
-(defun index-vals-by-row (tlistvals row-num)
-  "use getvals on the basic tlist to get this going..."
-  (let ((vals tlistvals))
-    (loop for n from 0 below (length vals) by 1
-       collect (nth row-num (nth n vals)))))
-
-(defun select-row-by-kv (tlist kvpairs)
-  "lets you select all matching items within a tlist given a 
-set of key-value pairs to matching"
-  (let* ((tlistvals (getvals tlist))
-	 (tlistkeys (getkeys tlist))
-	 (rowvals (rowsview tlistvals))
-	(filteredrows (range :min 0 :max (length rowvals)))
-	(keys (getf (dissoc-plist kvpairs) :keys))
-	(vals (getf (dissoc-plist kvpairs) :vals)))
-    (mapcar #'(lambda (key val) 
-		(let* (
-		       (index (position key tlistkeys)))
-		  (loop for n from 0 below (length rowvals) by 1
-		       do
-		       (if (not (eql (nth index (nth n rowvals)) val))
-			   (progn 
-			     (setf filteredrows (remove n filteredrows)))
-			   nil) ))) 
-	    keys
-	    vals)
-    filteredrows))
-
-(defun print-t-list (tlist)
-  (format t "~{~5a~}~%" (getkeys tlist))
- 
-  (format t "~{~{~5a~}~%~}"  (rowsview (getvals tlist))))
-
-(defun rowsview (tlistvals) 
-  (loop for n from 0 below (length (car tlistvals)) by 1
-	     collect (index-vals-by-row tlistvals n)))
-
-(defun dissoc-plist (ilist)
-  "splits a plist into its keys and vals parts"
-  (do ((keyslist nil) (valslist nil) (i 0 (1+ i)))
-      ((not (car ilist)) (list :keys keyslist :vals valslist))
-    (push (pop ilist) keyslist)
-    (push (pop ilist) valslist)))
-
-(ql:quickload "cl-who")
-
-(defun tester() (with-html-output-to-string (*standard-output* nil)
-  (:table :border 0 :cellpadding 4
-   (loop for i below 25 by 5
-         do (htm
-             (:tr :align "right"
-              (loop for j from i below (+ i 5)
-                    do (htm
-                        (:td :bgcolor (if (oddp j)
-                                        "pink"
-                                        "green")
-                             (fmt "~@R" (1+ j)))))))))))
-
-(defun html-prog-runner (tlist numinputs) 
-  "brings together logic of program." 
-  (with-html-output-to-string (*standard-output* nil)
-    (let* ((keys (getkeys tlist))
-	   (numoutputs (- (length keys) numinputs))
-	   (inputkeys (filter-by-index keys (range :min 0 :max numinputs)))
-	   (outputs (filter-by-index keys (range :min numinputs :max (length keys))))
-	   (leftinputs (filter-by-index inputkeys (range :min 0 :max (floor (/ numinputs 2)))))
-	   (topinputs (filter-by-index inputkeys (range :min (length leftinputs) :max numinputs)))
-	   (lcodes (create-gray-code (length leftinputs)))
-	   (tcodes (create-gray-code (length topinputs))))
-      (loop for outputwanted from 0 below numoutputs do
-	   (fmt "~%")
-	   (htm (:table :border 0 :cellpadding 4 
-			(htm (
-			:caption (fmt "~A k-map" (nth outputwanted outputs))))
-			(let* ((oiqlist (nth outputwanted (get-outputvals tlist numinputs))))
-			  (fmt "~%")
-			  (htm (:tr (htm (:td (format t "~a " inputkeys)))
-				    (loop for tcode in tcodes do
-					 (htm (:td (fmt "~a" tcode)))))) 
-			  (loop for lcode in lcodes do
-			       (fmt "~%")
-			       (htm (:tr 
-				     (htm (:td (fmt "~a" lcode))
-					  (loop for tcode in tcodes do 
-					       (htm (:td (fmt "~a" (nth 
-							  (car 
-							   (select-row-by-kv 
-							    tlist 
-							    (zip-plist inputkeys (append lcode tcode))))
-							  oiqlist))))))))))))))))
-
-(defun prog-runner (tlist) 
-  "brings together logic of program." 
-  (let* ((keys (getkeys tlist))
-	 (numinputs (parse-integer (prompt-read "Number of Inputs?")))
-	 (numoutputs (- (length keys) numinputs))
-	 (inputkeys (filter-by-index keys (range :min 0 :max numinputs)))
-	 (outputs (filter-by-index keys (range :min numinputs :max (length keys))))
-	 (leftinputs (filter-by-index inputkeys (range :min 0 :max (floor (/ numinputs 2)))))
-	 (topinputs (filter-by-index inputkeys (range :min (length leftinputs) :max numinputs)))
-	 (lcodes (create-gray-code (length leftinputs)))
-	 (tcodes (create-gray-code (length topinputs))))
-    (loop for outputwanted from 0 below numoutputs do
-	 (format t "~a k-map~%" (nth outputwanted outputs))
-	 (let* ((oiqlist (nth outputwanted (get-outputvals tlist numinputs))))
-	   (format t "~10a " inputkeys)
-	   (loop for tcode in tcodes do
-	      (format t "~10a" tcode))
-	 (format t "~%")
-	 (loop for lcode in lcodes do
-	      (format t "~10a ~{~10a~}~%" 
-		      lcode 
-		      (loop for tcode in tcodes collecting
-			    (nth 
-			     (car 
-			      (select-row-by-kv 
-			       tlist 
-			       (zip-plist inputkeys (append lcode tcode))))
-			     oiqlist)))))
-
-    (format t "~%"))))
-
-(defun filter-by-index (list indexes)
-    (loop for item in indexes collecting
-	 (nth item list)))
-
-(defun create-gray-code (numbits) 
-  "wrapper for %create-gray-code"
-  (%create-gray-code '((0) (1)) 1 numbits))
-
-(defun %create-gray-code (prev-code currentlevel finallevel) 
-  "given 1. a gray code as a list of lists, 2. the current number of bits in this gray code,
-  and 3. the number of bits we want in our final gray code, this function recursively generates
-  this 'finallevel' bit gray code.  uses logic found in in the wikipedia article on gray codes."
-  (if (eql currentlevel finallevel)
-      prev-code ;;base case!  we're done
-      (let* ((from-old (mapcar #'(lambda (x) (cons 0 x)) prev-code)) ;;prefix old entries with 0
-	     (from-new (mapcar #'(lambda (x) (cons 1 x)) (reverse prev-code))) ;;reflect old entries, prefix these new entries with 1
-	     (new-code (nconc from-old from-new)))
-	(%create-gray-code new-code (+ currentlevel 1) finallevel)))) ;recurse!
-
-(defun get-outputvals (tlist numinputs)
-  (let ((vals (getvals tlist)))
-    (filter-by-index vals (range :min numinputs :max (length vals)))))
-
-(defun make-keyword (name) (values (intern (string-upcase name) "KEYWORD")))
-
-(defun %create-io-list (s-truth-table)
-  (with-input-from-string 
-      (s s-truth-table)
-    (loop for x = (read s nil :end) until (eq x :end) 
-       collect (if 
-		(typep x 'symbol) 
-		(make-keyword x)
-		x)) ))
-
-;;; utility code
-(defmacro break-transparent (exp)
-  `(let ((x ,exp)) (break "argument to break: ~:S" x) x))
-
-(defun range (&key (min 0) (max 0) (step 1))
-   (loop for n from min below max by step
-      collect n))
-
-(defun prompt-read (prompt)
-  (format *query-io* "~a: " prompt)
-  (read-line *query-io*))
-
-(defun zip-plist (keys values)
-  "creates a plist from a list of keys and a list of values."
-  (loop for k in keys
-        for v in values nconc
-       (list k v)))
-
-
-;; (defun %tester1 () 
-;;   (let* ((outputwanted 0)
-;; 	(oiqlist (nth outputwanted (get-outputvals *itlist* 4)))
-;; 	(lcodes (create-gray-code 2))
-;; 	(tcodes (create-gray-code 2)))
-;;     (loop for lcode in lcodes collecting
-;; 	 (loop for tcode in tcodes collecting
-;; 	      (cons 
-;; 	       (append lcode tcode) 
-;; 	       (nth 
-;; 		(car 
-;; 		 (select-row-by-kv 
-;; 		  *itlist* 
-;; 		  (zip-plist '(:G :A :B :C) (append lcode tcode))))
-;; 		oiqlist))))))

@@ -105,6 +105,11 @@ overflow: hidden;
 	margin-top: 1em;
 }
 
+#kmapoutput {
+margin-left: auto;
+margin-right: auto;
+}
+
 /* ****************** next is class formatting  ****************** */
 .rightside {
 	margin-left: 1.2em;
