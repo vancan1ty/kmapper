@@ -28,7 +28,8 @@
 ;;;;
 ;;;; You may use or modify this program for any purpose, but please 
 ;;;; include my name in the source.
-
+;;;; make sure to set ttablepost uri to valid uri for your proxy schem
+;;;; as well as document root
 ;;; ********************START WEB SPECIFIC CODE******************************
 ;;(ql:quickload "html-template")   ;used for commented out no-longer used snippet 
                                    ;later down in the file
@@ -40,7 +41,7 @@
 (in-package :kmapweb)
 
 ;;replace this with your installation directory...
-(defvar *install-dir* #p"/home/vancan1ty/Desktop/lisp/kmapweb/") 
+(defvar *install-dir* #p"/var/wwwlisp/") 
 
 (setf *dispatch-table*
       (list #'dispatch-easy-handlers))
@@ -50,7 +51,7 @@
 ;;(load "kmapper.lisp")
 ;;(setf hunchentoot:*catch-errors-p* nil) 
 
-(define-easy-handler (easy-demop :uri "/ttablepost" :default-request-type :both)
+(define-easy-handler (easy-demop :uri "/kmapper/ttablepost" :default-request-type :both)
     ((truthtableinput :request-type :post 
 		      :init-form *truth-table*) 
      (numinputs :request-type :post))

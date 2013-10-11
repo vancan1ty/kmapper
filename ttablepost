@@ -1,0 +1,43 @@
+
+<table border='0' cellpadding='4' display='inline'><caption>S0 k-map</caption>
+<tr><td>(G A B C) </td><td>(0 0)</td><td>(0 1)</td><td>(1 1)</td><td>(1 0)</td></tr>
+<tr><td>(0 0)</td><td>0</td><td>0</td><td>0</td><td>0</td></tr>
+<tr><td>(0 1)</td><td>1</td><td>1</td><td>0</td><td>X</td></tr>
+<tr><td>(1 1)</td><td>1</td><td>1</td><td>0</td><td>X</td></tr>
+<tr><td>(1 0)</td><td>0</td><td>1</td><td>1</td><td>0</td></tr></table>
+<table border='0' cellpadding='4' display='inline'><caption>S1 k-map</caption>
+<tr><td>(G A B C) </td><td>(0 0)</td><td>(0 1)</td><td>(1 1)</td><td>(1 0)</td></tr>
+<tr><td>(0 0)</td><td>0</td><td>1</td><td>1</td><td>1</td></tr>
+<tr><td>(0 1)</td><td>0</td><td>1</td><td>0</td><td>X</td></tr>
+<tr><td>(1 1)</td><td>0</td><td>0</td><td>0</td><td>X</td></tr>
+<tr><td>(1 0)</td><td>0</td><td>0</td><td>1</td><td>1</td></tr></table>
+<table border='0' cellpadding='4' display='inline'><caption>S2 k-map</caption>
+<tr><td>(G A B C) </td><td>(0 0)</td><td>(0 1)</td><td>(1 1)</td><td>(1 0)</td></tr>
+<tr><td>(0 0)</td><td>0</td><td>0</td><td>1</td><td>1</td></tr>
+<tr><td>(0 1)</td><td>1</td><td>1</td><td>0</td><td>X</td></tr>
+<tr><td>(1 1)</td><td>1</td><td>1</td><td>0</td><td>X</td></tr>
+<tr><td>(1 0)</td><td>1</td><td>0</td><td>1</td><td>1</td></tr></table>
+<table border='0' cellpadding='4' display='inline'><caption>W k-map</caption>
+<tr><td>(G A B C) </td><td>(0 0)</td><td>(0 1)</td><td>(1 1)</td><td>(1 0)</td></tr>
+<tr><td>(0 0)</td><td>0</td><td>0</td><td>0</td><td>0</td></tr>
+<tr><td>(0 1)</td><td>0</td><td>0</td><td>1</td><td>X</td></tr>
+<tr><td>(1 1)</td><td>0</td><td>0</td><td>1</td><td>X</td></tr>
+<tr><td>(1 0)</td><td>0</td><td>0</td><td>0</td><td>0</td></tr></table>
+<table border='0' cellpadding='4' display='inline'><caption>X k-map</caption>
+<tr><td>(G A B C) </td><td>(0 0)</td><td>(0 1)</td><td>(1 1)</td><td>(1 0)</td></tr>
+<tr><td>(0 0)</td><td>1</td><td>1</td><td>1</td><td>0</td></tr>
+<tr><td>(0 1)</td><td>0</td><td>0</td><td>0</td><td>X</td></tr>
+<tr><td>(1 1)</td><td>0</td><td>0</td><td>0</td><td>X</td></tr>
+<tr><td>(1 0)</td><td>1</td><td>1</td><td>1</td><td>0</td></tr></table>
+<table border='0' cellpadding='4' display='inline'><caption>Y k-map</caption>
+<tr><td>(G A B C) </td><td>(0 0)</td><td>(0 1)</td><td>(1 1)</td><td>(1 0)</td></tr>
+<tr><td>(0 0)</td><td>0</td><td>0</td><td>1</td><td>0</td></tr>
+<tr><td>(0 1)</td><td>1</td><td>0</td><td>0</td><td>X</td></tr>
+<tr><td>(1 1)</td><td>1</td><td>0</td><td>0</td><td>X</td></tr>
+<tr><td>(1 0)</td><td>0</td><td>0</td><td>1</td><td>0</td></tr></table>
+<table border='0' cellpadding='4' display='inline'><caption>Z k-map</caption>
+<tr><td>(G A B C) </td><td>(0 0)</td><td>(0 1)</td><td>(1 1)</td><td>(1 0)</td></tr>
+<tr><td>(0 0)</td><td>0</td><td>1</td><td>0</td><td>1</td></tr>
+<tr><td>(0 1)</td><td>1</td><td>0</td><td>1</td><td>X</td></tr>
+<tr><td>(1 1)</td><td>1</td><td>0</td><td>1</td><td>X</td></tr>
+<tr><td>(1 0)</td><td>0</td><td>1</td><td>0</td><td>1</td></tr></table><div style='clear: both'></div>
