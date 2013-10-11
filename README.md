@@ -1,4 +1,4 @@
-kmapper  -- Currell Berry
+kmapper
 ==========================================
 
 About
@@ -8,9 +8,14 @@ This program creates karnaugh maps from truth table inputs.  The program is acce
 Installation and Running
 ------------------------------------------
 This program includes a web interface.  In a common lisp environment with quicklisp
-installed, running the program should be as simple as calling (load "kmapper.lisp") from
-the REPL, and navigating to localhost:8080 in a web browser. Quicklisp will handle installing
-the dependencies "
+installed, running the program should be as simple 
+1.  set the *install-dir* variable below to the directory in which you downloaded
+the project.
+2.  calling (load "kmapper.lisp") from the REPL, and navigating to localhost:8080 
+in a web browser. 
+
+Quicklisp will handle installing the dependencies.  If you don't have quicklisp, google
+quicklisp and follow the very easy instructions to install that.
 
 To use the REPL plain text interface:
 1. switch to the package :kmapweb

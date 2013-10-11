@@ -3,9 +3,12 @@
 ;;;; This program creates karnaugh maps from truth table inputs.
 ;;;; 
 ;;;; This program includes a web interface.  In a common lisp environment with quicklisp
-;;;; installed, running the program should be as simple as calling (load "kmapper.lisp") from
-;;;; the REPL, and navigating to localhost:8080 in a web browser. Quicklisp will handle installing
-;;;; the dependencies "
+;;;; installed, running the program should be as simple 
+;;;; 1.  set the *install-dir* variable below to the directory in which you downloaded
+;;;; the project.
+;;;; 2.  calling (load "kmapper.lisp") from the REPL, and navigating to localhost:8080 
+;;;; in a web browser. 
+;;;; Quicklisp will handle installing the dependencies "
 ;;;;
 ;;;; To use the REPL plain text interface:
 ;;;; 1. switch to the package :kmapweb
@@ -28,14 +31,16 @@
 
 ;;; ********************START WEB SPECIFIC CODE******************************
 ;;(ql:quickload "html-template")   ;used for commented out no-longer used snippet 
-					;later down in the file
+                                   ;later down in the file
 (ql:quickload "cl-who")
 (ql:quickload "hunchentoot")
 
 (defpackage :kmapweb
   (:use :common-lisp :hunchentoot :cl-who))
-
 (in-package :kmapweb)
+
+;;replace this with your installation directory...
+(defvar *install-dir* #p"/home/vancan1ty/Desktop/lisp/kmapweb/") 
 
 (setf *dispatch-table*
       (list #'dispatch-easy-handlers))
@@ -58,7 +63,7 @@
 
 
 (defvar *macceptor* (make-instance 'hunchentoot:easy-acceptor :port 8080 
-                                   :document-root #p"/home/vancan1ty/Desktop/lisp/kmapweb/"))
+                                   :document-root *install-dir*))
 (hunchentoot:start *macceptor*)
 
 (defun getKMapsOnly (truthtable numinputs)
@@ -86,7 +91,7 @@
   (let ((validate-return (validate-tlist tlist numinputs)))
     (if (not (eql t validate-return)) 
 	(error 'malformed-truth-table-error :text validate-return)))  
-  
+ 
   ;;then proceed if we passed the previous step
   (with-html-output-to-string (*standard-output* nil)
     (let* ((keys (getkeys tlist))
@@ -232,17 +237,17 @@ header"
 			    ((<= i (* 2 numinputs))
 			     (if (not (validate-input-list entry numinputs))
 				 (return-from validate-tlist (concatenate 'string 
-									  "invalid input column: " 
-									  (format nil "~a" (nth (- i 1) tlist)) 
-									  " " (format nil "~a" entry) 
-									  ".  Did you specify the correct number of inputs?"))))
+						      "invalid input column: " 
+						      (format nil "~a" (nth (- i 1) tlist)) 
+						      " " (format nil "~a" entry) 
+						      ".  Did you specify the correct number of inputs?"))))
 			    (t  ;;this is a regular output list
 			     (if (not (eql (length entry) (expt 2 numinputs)))
 				 (return-from validate-tlist (concatenate 'string 
-									  "invalid length output column" 
-									  (format nil "~a" (nth (- i 1) tlist)) 
-									  " " 
-									  (format nil "~a" entry)))))))))
+						      "invalid length output column" 
+						      (format nil "~a" (nth (- i 1) tlist)) 
+						      " " 
+						      (format nil "~a" entry)))))))))
       t))
 
 (defun select-row-by-kv (tlist kvpairs)
