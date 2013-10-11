@@ -8,10 +8,12 @@ This program creates karnaugh maps from truth table inputs.  The program is acce
 Installation and Running
 ------------------------------------------
 This program includes a web interface.  In a common lisp environment with quicklisp
-installed, running the program should be as simple 
-1.  set the *install-dir* variable below to the directory in which you downloaded
-the project.
-2.  calling (load "kmapper.lisp") from the REPL, and navigating to localhost:8080 
+installed, to run the program.
+1.  set the *install-dir* variable below to the root directory you'd like hunchentoot to 
+use to process web requests.
+2.  change the uri "/lisp/ttablepost" to "ttablepost" if you're running hunchentoot as
+standalone without a proxy.
+2.  call (load "kmapper.lisp") from the REPL, and navigate to localhost:8080 
 in a web browser. 
 
 Quicklisp will handle installing the dependencies.  If you don't have quicklisp, google
